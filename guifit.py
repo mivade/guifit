@@ -4,22 +4,20 @@ import numpy as np
 from guiqwt.widgets.fit import FitParam, guifit
 
 class FitFunction(object):
-    """Generic class for defining new fit functions.
-
-    Notes
-    -----
-    TODO: Documentation on how to define new classes.
-
-    """
+    """Generic class for defining new fit functions."""
     __metaclass__ = ABCMeta
 
     @abstractmethod
     def __init__(self, xdata, ydata):
-        pass
+        """Define new fit functions here. The constructor should set
+        self.xdata and self.ydata and define the fit parameters to
+        use, setting sensible bounds based on the input data.
+
+        """
 
     @abstractmethod
     def func(self, x, params):
-        pass
+        """This method defines the fit function itself."""
 
 # Oscillations
 # -----------------------------------------------------------------------------
