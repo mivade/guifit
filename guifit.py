@@ -58,7 +58,7 @@ class Guassian(FitFunction):
         _ys = 4*np.std(ydata)
         B = FitParam("Offset", np.mean(ydata), -_ys, _ys)
         x0 = FitParam("Center", xdata[np.argmax(ydata)], xdata[0], xdata[-1])
-        s = FitParam("Std Dev", (xdata[-1] - xdata[0])/3., 0, np.max(xdata))
+        s = FitParam("Std Dev", (xdata[-1] - xdata[0])/3., 0, np.max(xdata) - np.min(xdata))
         self.params = [A, B, x0, s]
         self.xdata = xdata
         self.ydata = ydata
