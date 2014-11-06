@@ -19,11 +19,104 @@ class FitFunction(object):
     def func(self, x, params):
         """This method defines the fit function itself."""
 
+class Linear(FitFunction):
+    """Linear fit::
+
+      f(x, m, B) = m*x + B
+
+    """
+    def __init__(self, xdata, ydata):
+        m = FitParam("Slope", ydata[-1] - ydata[0], np.min(ydata), np.max(ydata))
+        B = FitParam("y-intercept", 0, -np.max(ydata), np.max(ydata))
+        self.params = [m, B]
+        self.xdata = xdata
+        self.ydata = ydata
+
+    def func(self, x, params):
+        m, B = params
+        return m*x + B
+
 # Oscillations
 # -----------------------------------------------------------------------------
         
 class Sine(FitFunction):
-    """Sinusoids::
+    """Sine without phase::
+
+      f(x, A, B, f) = A*sin(f*x) + B
+    
+    """
+    def __init__(self, xdata, ydata):
+        A = FitParam("Amplitude", abs(np.max(ydata)), 0, 100)
+        B = FitParam("Offset", np.mean(ydata), -100, 100)
+        _f0 = np.median(xdata)
+        f = FitParam("Frequency", _f0, xdata[0], xdata[-1])
+        self.params = [A, B, f]
+        self.xdata = xdata
+        self.ydata = ydata
+
+    def func(self, x, params):
+        A, B, f = params
+        return A*np.sin(f*x) + B
+
+class Cosine(FitFunction):
+    """Cosine without phase::
+
+      f(x, A, B, f) = A*cos(f*x) + B
+    
+    """
+    def __init__(self, xdata, ydata):
+        A = FitParam("Amplitude", abs(np.max(ydata)), 0, 100)
+        B = FitParam("Offset", np.mean(ydata), -100, 100)
+        _f0 = np.median(xdata)
+        f = FitParam("Frequency", _f0, xdata[0], xdata[-1])
+        self.params = [A, B, f]
+        self.xdata = xdata
+        self.ydata = ydata
+
+    def func(self, x, params):
+        A, B, f = params
+        return A*np.cos(f*x) + B
+
+class SineSquared(FitFunction):
+    """Squared sine without phase::
+
+      f(x, A, B, f) = A*sin(f*x)**2 + B
+    
+    """
+    def __init__(self, xdata, ydata):
+        A = FitParam("Amplitude", abs(np.max(ydata)), 0, 100)
+        B = FitParam("Offset", np.mean(ydata), -100, 100)
+        _f0 = np.median(xdata)
+        f = FitParam("Frequency", _f0, xdata[0], xdata[-1])
+        self.params = [A, B, f]
+        self.xdata = xdata
+        self.ydata = ydata
+
+    def func(self, x, params):
+        A, B, f = params
+        return A*np.sin(f*x)**2 + B
+
+class CosineSquared(FitFunction):
+    """Squared cosine without phase::
+
+      f(x, A, B, f) = A*cos(f*x)**2 + B
+    
+    """
+    def __init__(self, xdata, ydata):
+        A = FitParam("Amplitude", abs(np.max(ydata)), 0, 100)
+        B = FitParam("Offset", np.mean(ydata), -100, 100)
+        _f0 = np.median(xdata)
+        f = FitParam("Frequency", _f0, xdata[0], xdata[-1])
+        self.params = [A, B, f]
+        self.xdata = xdata
+        self.ydata = ydata
+
+    def func(self, x, params):
+        A, B, f = params
+        return A*np.cos(f*x)**2 + B
+
+class Sinusoid(FitFunction):
+    """Generic sinusoids::
 
       f(x, A, B, f, phi) = A*sin(f*x + phi) + B
     
@@ -65,6 +158,24 @@ class Guassian(FitFunction):
         A, B, x0, s = params
         return A*np.exp(-(x - x0)**2/(2*s**2)) + B
 
+class Lorentzian(FitFunction):
+    """Lorentzian profiles::
+
+      f(x, A, x0, g) = A*g**2/((x - x0)**2 + g**2)
+
+    """
+    def __init__(self, xdata, ydata):
+        A = FitParam("Height", np.max(ydata), 0, 1.5*np.max(ydata))
+        x0 = FitParam("Center", xdata[np.argmax(ydata)], xdata[0], xdata[-1])
+        g = FitParam("FWHM", (xdata[-1] - xdata[0])/3., 0, np.max(xdata) - np.min(xdata))
+        self.params = [A, x0, g]
+        self.xdata = xdata
+        self.ydata = ydata
+
+    def func(self, x, params):
+        A, x0, g = params
+        return A*g**2/((x - x0)**2 + g**2)
+
 # Exponentials
 # -----------------------------------------------------------------------------
 
@@ -85,6 +196,24 @@ class ExpDecay(FitFunction):
     def func(self, x, params):
         A, B, tau = params
         return A*np.exp(-x/tau) + B
+
+class ExpGrowth(FitFunction):
+    """Exponential growth::
+
+      f(x, A, B, tau) = A*exp(x/tau) + B
+    
+    """
+    def __init__(self, xdata, ydata):
+        A = FitParam("Amplitude", np.max(ydata), 0, 1.5*np.max(ydata))
+        B = FitParam("Offset", 0, -np.mean(ydata), np.mean(ydata))
+        tau = FitParam("Rate", 0.3*(xdata[-1] - xdata[0]), 0, xdata[0])
+        self.params = [A, B, tau]
+        self.xdata = xdata
+        self.ydata = ydata
+
+    def func(self, x, params):
+        A, B, tau = params
+        return A*np.exp(x/tau) + B
 
 # Interactive fitting
 # -----------------------------------------------------------------------------
