@@ -88,11 +88,79 @@ class ExpDecay(FitFunction):
         A, B, tau = params
         return A*np.exp(-x/tau) + B
 
-# Main
+# Interactive fitting
 # -----------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    x = np.linspace(-10, 10, 1000)
-    y = np.cos(1.5*x) + np.random.rand(x.shape[0])*.2
-    func = Sine(x, y)
+    import sys
+    import os.path
+    import inspect
+    import pickle
+    import guidata
+    import guidata.dataset.datatypes as dt
+    import guidata.dataset.dataitems as di
+    app = guidata.qapplication()
+
+    # Get all possible functions
+    functions = []
+    _excluded = ['ABCMeta', 'FitFunction', 'FitParam']
+    for name, obj in inspect.getmembers(sys.modules[__name__]):
+        if inspect.isclass(obj) and name not in _excluded:
+            functions.append((name, name))
+
+    # Get last used values, if present
+    config_file = os.path.expanduser('~/.guifit')
+    if not os.path.exists(config_file):
+        config = {
+            'file': '',
+            'directory': os.path.dirname(config_file),
+            'function': 'ExpDecay',
+            'xcol': 0,
+            'ycol': 1,
+            'skiprows': 1
+        }
+    else:
+        with open(config_file, 'r') as f:
+            config = pickle.load(f)
+
+    # Request data file and fit function to use
+    class InteractiveFitSettings(dt.DataSet):
+        """Specify file and fit function"""
+        filename = di.FileOpenItem(
+            "Data file", ('dat', 'csv', 'tsv', 'txt'),
+            default=config['file'], basedir=config['directory']
+        )
+        funcname = di.ChoiceItem("Fit function", functions, default=config['function'])
+        xcol = di.IntItem("x data column", default=config['xcol'], min=0)
+        ycol = di.IntItem("y data column", default=config['ycol'], min=0)
+        skiprows = di.IntItem("Rows to skip", default=config['skiprows'], min=0)
+    interactive = InteractiveFitSettings()
+    if not interactive.edit(size=(640, 1)):
+        sys.exit(0)
+    else:
+        config['file'] = interactive.filename
+        config['function'] = interactive.funcname
+        config['xcol'] = interactive.xcol
+        config['ycol'] = interactive.ycol
+        config['skiprows'] = interactive.skiprows
+        with open(config_file, 'w') as f:
+            pickle.dump(config, f)
+
+    # Open data file
+    name, extension = os.path.splitext(interactive.filename)
+    if extension == 'csv':
+        delimiter = ','
+    else:
+        delimiter = None
+    xdata, ydata = np.loadtxt(
+        interactive.filename, delimiter=delimiter,
+        usecols=(interactive.xcol, interactive.ycol),
+        unpack=True, skiprows=interactive.skiprows
+    )
+
+    # Fit
+    #x = np.linspace(-10, 10, 1000)
+    #y = np.cos(1.5*x) + np.random.rand(x.shape[0])*.2
+    #func = Sine(x, y)
+    func = getattr(sys.modules[__name__], interactive.funcname)(xdata, ydata)
     values = guifit(func.xdata, func.ydata, func.func, func.params)
